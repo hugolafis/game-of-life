@@ -16,7 +16,6 @@ function loop() {
 
   if (dt > targetMs) {
     // do updates
-    console.log(dt);
 
     lifeController.update(dt);
 
