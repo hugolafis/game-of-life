@@ -1,4 +1,4 @@
-import "./App.scss";
+import './App.scss';
 
 export class LifeController {
   private canvasContext: CanvasRenderingContext2D;
@@ -16,14 +16,18 @@ export class LifeController {
     this.imageData = this.canvasContext.createImageData(this.size, this.size);
 
     // Randomise data
-    let i = this.bufferLength;
-    while (i -= 4) {
+    // for (i = this.bufferLength; (i -= 4); ) {
+    for (let i = 0; i < this.bufferLength; i += 4) {
       if (Math.random() < 0.5) {
+        this.imageData.data[i] = 255;
+        this.imageData.data[i + 1] = 255;
+        this.imageData.data[i + 2] = 255;
+        this.imageData.data[i + 3] = 255;
         continue;
       }
 
       const random = Math.round(Math.random()) * 255;
-  
+
       this.imageData.data[i] = random;
       this.imageData.data[i + 1] = random;
       this.imageData.data[i + 2] = random;
@@ -38,64 +42,123 @@ export class LifeController {
 
     const timeBefore = performance.now();
 
-    let i = this.bufferLength;
-    while (i -= 4) {
-      const numNeighbors = this.checkNeighbors(i);
+    for (let y = 0; y < this.canvas.height; y++) {
+      for (let x = 0; x < this.canvas.width; x++) {
+        const neighbors = this.canvasContext.getImageData(y, x, 3, 3).data;
+        let aliveNeighbors = 0;
 
-      if (numNeighbors === 2) {
-        // Pixel survives
-        continue;
-      } else if (numNeighbors === 3) {
-        // Pixel spawns
-        this.imageData.data[i] = 0;
-        this.imageData.data[i + 1] = 0;
-        this.imageData.data[i + 2] = 0;
-        this.imageData.data[i + 3] = 255;
+        // Are any neighbors valid?
+        // e.g. not white and not 0 alpha
+        for (let i = 0; i < neighbors.length; i += 4) {
+          if (neighbors[i + 3] === 0) {
+            continue;
+          }
 
-        continue;
+          if (neighbors[i] === 0) {
+            aliveNeighbors++;
+          }
+        }
+
+        // Update pixel
+        const indice = (x + y * this.canvas.width) * 4;
+
+        this.updatePixel(indice, aliveNeighbors);
       }
-
-      // Pixel dies
-      this.imageData.data[i] = 255;
-      this.imageData.data[i + 1] = 255;
-      this.imageData.data[i + 2] = 255;
-      this.imageData.data[i + 3] = 255;
     }
 
+    /*
+    for (let i = 0; i < this.imageData.data.length; i += 4) {
+      // while ((i -= 4)) {
+
+      const numNeighbors = this.checkNeighbors(i);
+
+      // Check alive cells
+      if (this.imageData.data[i] === 0) {
+        if (numNeighbors > 2) {
+          // Pixel survives
+
+          continue;
+        } else {
+          // Pixel dies
+          this.imageData.data[i] = 255;
+          this.imageData.data[i + 1] = 255;
+          this.imageData.data[i + 2] = 255;
+          this.imageData.data[i + 3] = 255;
+
+          continue;
+        }
+      } else {
+        if (numNeighbors >= 3) {
+          // Pixel spawns
+          this.imageData.data[i] = 0;
+          this.imageData.data[i + 1] = 0;
+          this.imageData.data[i + 2] = 0;
+          this.imageData.data[i + 3] = 255;
+
+          continue;
+        }
+      }
+    }
+    */
 
     this.canvasContext.putImageData(this.imageData, 0, 0);
     const timeNow = performance.now();
     console.log(timeNow - timeBefore);
   };
 
+  updatePixel = (i: number, aliveNeighbors: number): void => {
+    // Is the current pixel alive?
+    if (this.imageData.data[i] === 0) {
+      // If 2 or 3 neighbors, survive
+      if (aliveNeighbors === 2 || aliveNeighbors === 3) {
+        return;
+      }
+    } else {
+      // Dead pixels resurrect if they have 3 alive neighbors
+      if (aliveNeighbors === 3) {
+        this.imageData.data[i] = 0;
+        this.imageData.data[i + 1] = 0;
+        this.imageData.data[i + 2] = 0;
+        this.imageData.data[i + 3] = 255;
+
+        return;
+      }
+    }
+
+    // Otherwise, it dies
+    this.imageData.data[i] = 255;
+    this.imageData.data[i + 1] = 255;
+    this.imageData.data[i + 2] = 255;
+    this.imageData.data[i + 3] = 255;
+  };
+
   checkNeighbors = (i: number): number => {
     let alive = 0;
+    debugger;
+    alive += this.checkPixel(this.imageData.data[i - this.lineLength - 4]); // Top Left
+    alive += this.checkPixel(this.imageData.data[i - this.lineLength]); // Top
+    alive += this.checkPixel(this.imageData.data[i - this.lineLength + 4]); // Top Right
+    alive += this.checkPixel(this.imageData.data[i + 4]); // Right
+    alive += this.checkPixel(this.imageData.data[i + this.lineLength + 4]); // Bottom Right
+    alive += this.checkPixel(this.imageData.data[i + this.lineLength]); // Bottom
+    alive += this.checkPixel(this.imageData.data[i + this.lineLength - 4]); // Bottom Left
+    alive += this.checkPixel(this.imageData.data[i - 4]); // Left
 
     // check the neighbors around this pixel to see if there's more than two alive
-    alive += this.checkPixel(this.imageData.data[i - 4 - this.lineLength]);
-    alive += this.checkPixel(this.imageData.data[i - this.lineLength]);
-    alive += this.checkPixel(this.imageData.data[i + 4 - this.lineLength]);
-    alive += this.checkPixel(this.imageData.data[i - 4])
-    alive += this.checkPixel(this.imageData.data[i + 4]);
-    alive += this.checkPixel(this.imageData.data[i - 4 + this.lineLength]);
-    alive += this.checkPixel(this.imageData.data[i + this.lineLength]);
-    alive += this.checkPixel(this.imageData.data[i + 4 + this.lineLength]);
+    // alive += this.checkPixel(this.imageData.data[i - 4 - this.lineLength]);
+    // alive += this.checkPixel(this.imageData.data[i - this.lineLength]);
+    // alive += this.checkPixel(this.imageData.data[i + 4 - this.lineLength]);
+    // alive += this.checkPixel(this.imageData.data[i - 4]);
+    // alive += this.checkPixel(this.imageData.data[i + 4]);
+    // alive += this.checkPixel(this.imageData.data[i - 4 + this.lineLength]);
+    // alive += this.checkPixel(this.imageData.data[i + this.lineLength]);
+    // alive += this.checkPixel(this.imageData.data[i + 4 + this.lineLength]);
 
-    // two neighbors
-    if (alive === 2) {
-      return 2;
-    }
-
-    // three neighbors
-    if (alive >= 3) {
-      return 3;
-    }
-
-    return 0;
-  }
+    return alive;
+  };
 
   checkPixel = (pixel: number): number => {
-    if (isNaN(pixel)) {
+    if (isNaN(pixel) || pixel === undefined) {
       return 0;
     }
 
@@ -104,5 +167,5 @@ export class LifeController {
     }
 
     return 0;
-  }
+  };
 }

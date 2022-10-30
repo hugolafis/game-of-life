@@ -7,7 +7,7 @@ const lifeController = new LifeController(canvas);
 window.requestAnimationFrame(loop);
 
 let lastUpdate = performance.now();
-const targetMs = 1000;
+const targetMs = 250;
 let dt: number = 0;
 function loop() {
   const now = performance.now();
