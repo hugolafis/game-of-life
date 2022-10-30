@@ -1,2 +1,3 @@
-# game-of-life
-Conway's Game of Life
+# Game of Life
+
+A canvas-based version of Conway's 'Game of Life'.

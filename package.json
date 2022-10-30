@@ -1,0 +1,38 @@
+{
+  "name": "game-of-life",
+  "version": "0.0.0",
+  "description": "test",
+  "proxy": "http://localhost:8080",
+  "main": "index.js",
+  "scripts": {
+    "dev": "webpack-dev-server --mode development --open",
+    "build": "webpack --mode production",
+    "test": "jest"
+  },
+  "keywords": [
+    "typescript",
+    "webpack"
+  ],
+  "author": "Matt",
+  "license": "MIT",
+  "dependencies": {
+    "file-loader": "^6.1.0",
+    "mobx": "^5.15.4"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.25",
+    "@types/node": "^14.14.6",
+    "awesome-typescript-loader": "^5.2.1",
+    "css-loader": "^3.6.0",
+    "html-webpack-plugin": "^3.2.0",
+    "jest": "^24.9.0",
+    "sass-loader": "^9.0.2",
+    "source-map-loader": "^0.2.4",
+    "style-loader": "^1.2.1",
+    "ts-jest": "^24.3.0",
+    "typescript": "^3.9.6",
+    "webpack": "^4.29.0",
+    "webpack-cli": "^3.2.1",
+    "webpack-dev-server": "^3.1.14"
+  }
+}
