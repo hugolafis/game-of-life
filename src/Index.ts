@@ -1,14 +1,16 @@
 import { LifeController } from './App';
 
 const canvas = document.getElementById('#canvas') as HTMLCanvasElement;
+const stats = document.getElementById('#stats') as HTMLDivElement;
 
 const lifeController = new LifeController(canvas);
 
 window.requestAnimationFrame(loop);
 
 let lastUpdate = performance.now();
-const targetMs = 16.6;
+const targetMs = 50;
 let dt: number = 0;
+let generation: number = 0;
 function loop() {
   const now = performance.now();
   dt += now - lastUpdate;
@@ -20,6 +22,8 @@ function loop() {
     lifeController.update(dt);
 
     dt = 0;
+    generation++;
+    stats.innerHTML = `Generation: ${generation}`;
   }
 
   window.requestAnimationFrame(loop);

@@ -46,8 +46,8 @@ export class LifeController {
 
     for (let y = 0; y < this.canvas.height; y++) {
       for (let x = 0; x < this.canvas.width; x++) {
-        const neighbors = this.canvasContext.getImageData(x - 1, y - 1, 3, 3).data;
         let aliveNeighbors = 0;
+        const neighbors = this.canvasContext.getImageData(x - 1, y - 1, 3, 3).data;
 
         // Are any neighbors valid?
         // e.g. not white and not 0 alpha
