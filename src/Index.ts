@@ -1,3 +1,5 @@
 import { LifeController } from './App';
 
-console.log("test");
+const canvas = document.getElementById('#canvas') as HTMLCanvasElement;
+
+const myController = new LifeController(canvas);

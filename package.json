@@ -16,8 +16,11 @@
   "author": "Matt",
   "license": "MIT",
   "dependencies": {
+    "eslint": "^8.26.0",
     "file-loader": "^6.1.0",
-    "mobx": "^5.15.4"
+    "mobx": "^5.15.4",
+    "sass": "^1.55.0",
+    "typescript-eslint": "^0.0.1-alpha.0"
   },
   "devDependencies": {
     "@types/jest": "^24.0.25",
