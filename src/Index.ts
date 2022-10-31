@@ -3,7 +3,7 @@ import { LifeController } from './App';
 const canvas = document.getElementById('#canvas') as HTMLCanvasElement;
 const stats = document.getElementById('#stats') as HTMLDivElement;
 
-const lifeController = new LifeController(canvas);
+const lifeController = new LifeController(canvas, 100, 100);
 
 window.requestAnimationFrame(loop);
 

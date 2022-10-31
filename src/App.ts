@@ -1,64 +1,105 @@
 import './App.scss';
 
 export class LifeController {
-  private canvasContext: CanvasRenderingContext2D;
-  private readonly imageData: ImageData;
-  private readonly size = 100;
-  private readonly bufferLength = this.size * this.size * 4;
-  private readonly lineLength = this.size * 4;
+  private imageData: ImageData;
+  private buffer: number[][] = [];
+  private swapBuffer: number[][] = [];
+  private readonly canvasContext: CanvasRenderingContext2D;
 
-  constructor(private readonly canvas: HTMLCanvasElement) {
-    canvas.width = this.size;
-    canvas.height = this.size;
+  constructor(
+    private readonly canvas: HTMLCanvasElement,
+    private readonly xSize: number,
+    private readonly ySize: number
+  ) {
+    // Canvas sizes
+    canvas.width = xSize;
+    canvas.height = ySize;
+
     this.canvasContext = canvas.getContext('2d', {
       willReadFrequently: true,
     } as CanvasRenderingContext2DSettings);
     this.canvasContext.imageSmoothingEnabled = false;
 
-    this.imageData = this.canvasContext.createImageData(this.size, this.size);
-
-    // Randomise data
-    // for (i = this.bufferLength; (i -= 4); ) {
-    for (let i = 0; i < this.bufferLength; i += 4) {
-      if (Math.random() < 0.5) {
-        this.imageData.data[i] = 255;
-        this.imageData.data[i + 1] = 255;
-        this.imageData.data[i + 2] = 255;
-        this.imageData.data[i + 3] = 255;
-        continue;
+    // Populate with random data
+    const weight = 0.1;
+    for (let y = 0; y < ySize; y++) {
+      let row: number[] = [];
+      for (let x = 0; x < xSize; x++) {
+        const random = Math.random() < weight ? 0 : 255;
+        //const random = 255;
+        row.push(random);
       }
 
-      const random = Math.round(Math.random()) * 255;
-
-      this.imageData.data[i] = random;
-      this.imageData.data[i + 1] = random;
-      this.imageData.data[i + 2] = random;
-      this.imageData.data[i + 3] = 255;
+      this.buffer.push(row);
     }
 
-    this.canvasContext.putImageData(this.imageData, 0, 0);
+    this.imageData = this.canvasContext.createImageData(xSize, ySize);
   }
 
   update = (dt: number): void => {
     console.log('\ntick');
-
     const timeBefore = performance.now();
 
-    for (let y = 0; y < this.canvas.height; y++) {
-      for (let x = 0; x < this.canvas.width; x++) {
+    // Copy buffer to swapBuffer
+    // Read from buffer, write to swapBuffer
+    this.swapBuffer = this.deepCopyArray(this.buffer);
+
+    // Pixels to array values
+    const fixedWidth = this.xSize - 1;
+    const fixedHeight = this.ySize - 1;
+
+    // Loop for each pixel
+    for (let y = 0; y < this.ySize; y++) {
+      for (let x = 0; x < this.xSize; x++) {
         let aliveNeighbors = 0;
-        const neighbors = this.canvasContext.getImageData(x - 1, y - 1, 3, 3).data;
 
-        // Are any neighbors valid?
-        // e.g. not white and not 0 alpha
-        for (let i = 0; i < neighbors.length; i += 4) {
+        let aboveY;
+        let belowY;
+        let leftX;
+        let rightX;
+
+        // Calculate wrapping
+        if (y - 1 < 0) {
+          aboveY = fixedHeight;
+        } else {
+          aboveY = y - 1;
+        }
+
+        if (y + 1 > fixedHeight) {
+          belowY = 0;
+        } else {
+          belowY = y + 1;
+        }
+
+        if (x - 1 < 0) {
+          leftX = fixedWidth;
+        } else {
+          leftX = x - 1;
+        }
+
+        if (x + 1 > fixedWidth) {
+          rightX = 0;
+        } else {
+          rightX = x + 1;
+        }
+
+        // Access neighboring pixels
+        const neighbors: number[] = [
+          this.buffer[aboveY][leftX],
+          this.buffer[aboveY][x],
+          this.buffer[aboveY][rightX],
+          this.buffer[y][leftX],
+          this.buffer[y][x],
+          this.buffer[y][rightX],
+          this.buffer[belowY][leftX],
+          this.buffer[belowY][x],
+          this.buffer[belowY][rightX],
+        ];
+
+        // Check values of neighbors
+        for (let i = 0; i < neighbors.length; i++) {
           // Skip itself
-          if (i === 16) {
-            continue;
-          }
-
-          // Skip out of range
-          if (neighbors[i + 3] === 0) {
+          if (i === 4) {
             continue;
           }
 
@@ -68,40 +109,59 @@ export class LifeController {
         }
 
         // Update pixel
-        const indice = (x + y * this.canvas.width) * 4;
+        const newPixelValue = this.updatePixel(x, y, aliveNeighbors);
+        this.swapBuffer[y][x] = newPixelValue;
 
-        this.updatePixel(indice, aliveNeighbors);
+        // Write the value into the ImageData
+        const indice = (x + 1 + y * this.xSize) * 4;
+        this.imageData.data[indice] = newPixelValue;
+        this.imageData.data[indice + 1] = newPixelValue;
+        this.imageData.data[indice + 2] = newPixelValue;
+        this.imageData.data[indice + 3] = 255;
       }
     }
 
+    // Draw image
     this.canvasContext.putImageData(this.imageData, 0, 0);
+
+    // Update buffer
+    this.buffer = this.deepCopyArray(this.swapBuffer);
+
+    // Debug
     const timeNow = performance.now();
     console.log(timeNow - timeBefore);
   };
 
-  updatePixel = (i: number, aliveNeighbors: number): void => {
-    // Is the current pixel alive?
-    if (this.imageData.data[i] === 0) {
-      // If 2 or 3 neighbors, survive
-      if (aliveNeighbors === 2 || aliveNeighbors === 3) {
-        return;
-      }
-    } else {
-      // Dead pixels resurrect if they have 3 alive neighbors
-      if (aliveNeighbors === 3) {
-        this.imageData.data[i] = 0;
-        this.imageData.data[i + 1] = 0;
-        this.imageData.data[i + 2] = 0;
-        this.imageData.data[i + 3] = 255;
-
-        return;
+  private readonly updatePixel = (x: number, y: number, neighbors: number): number => {
+    // Is the pixel alive?
+    if (this.buffer[y][x] === 0) {
+      // If two or three neighbors, stay alive
+      if (neighbors === 2 || neighbors === 3) {
+        return 0;
+      } else {
+        // It dies
+        return 255;
       }
     }
 
-    // Otherwise, it dies
-    this.imageData.data[i] = 255;
-    this.imageData.data[i + 1] = 255;
-    this.imageData.data[i + 2] = 255;
-    this.imageData.data[i + 3] = 255;
+    // If the pixel is dead, does it have three neighbors?
+    if (neighbors === 3) {
+      // Come back to life
+      return 0;
+    }
+
+    // Die
+    return 255;
+  };
+
+  private readonly deepCopyArray = (array: number[][]): number[][] => {
+    const newParentArray = [];
+
+    for (let i = 0; i < array.length; i++) {
+      const newLine = [...array[i]];
+      newParentArray.push(newLine);
+    }
+
+    return newParentArray;
   };
 }
